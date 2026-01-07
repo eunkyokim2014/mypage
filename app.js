@@ -1,5 +1,3 @@
-import run from "./movie-metadata.js";
-
 const titleInput = document.getElementById("movie-title");
 const fileInput = document.getElementById("movie-file");
 const statusEl = document.getElementById("status");
@@ -97,6 +95,7 @@ async function handleSearch(payload) {
   setStatus("조회 중...");
 
   try {
+    const { default: run } = await import("./movie-metadata.js");
     const output = await run(payload);
     if (output.error) {
       setStatus(output.error, true);
