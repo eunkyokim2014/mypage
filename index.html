@@ -1,75 +1,193 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2023년 버킷리스트</title>
-    <style>
-        .title {
-            color: white;
-            background-color: tomato;
-            font-size: 24px;
-            padding: 4px 14px;
-            border-radius: 8px;
-        }
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>영화 메타데이터 테스트 UI</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Pretendard", "Apple SD Gothic Neo", sans-serif;
+    }
 
-        .bg {
-            width: 360px;
-            background-image: url("https://s3.ap-northeast-2.amazonaws.com/materials.spartacodingclub.kr/bucketList/bg-grid.png");
-        }
+    body {
+      margin: 0;
+      background: #f6f7fb;
+      color: #1f2937;
+    }
 
-        .msg {
-            font-weight: bold;
+    .container {
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 20px 60px;
+    }
 
-        }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
 
-        .bucket {
-            width: 160px;
-            height: 160px;
-        }
+    p.description {
+      margin: 0 0 24px;
+      color: #4b5563;
+    }
 
-        .img1 {
-            background-image: url("https://s3.ap-northeast-2.amazonaws.com/materials.spartacodingclub.kr/bucketList/bucket-red.png");
-            background-size: cover;
-            background-position: center;
-        }
+    .panel {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      margin-bottom: 24px;
+    }
 
-        .img2 {
-            background-image: url("https://s3.ap-northeast-2.amazonaws.com/materials.spartacodingclub.kr/bucketList/bucket-lightred.png");
-            background-size: cover;
-            background-position: center;
-        }
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
 
+    label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 8px;
+    }
 
-        ]
-    </style>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;500;600;700&display=swap');
+    input[type="text"],
+    input[type="file"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 14px;
+      background: #fff;
+    }
 
-        * {
-            font-family: 'Hahmlet', serif;
-        }
-    </style>
-    <link rel="stylesheet" type="text/css"
-        href="https://s3.ap-northeast-2.amazonaws.com/materials.spartacodingclub.kr/bucketList/sparta-bucket2.css">
+    button {
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 600;
+    }
 
+    button.secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
 
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f9fafb;
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #eef2ff;
+      color: #3730a3;
+    }
+
+    .download {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      text-decoration: none;
+      color: #1d4ed8;
+      font-weight: 600;
+    }
+
+    .error {
+      color: #dc2626;
+      font-weight: 600;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 8px;
+    }
+  </style>
 </head>
+<body>
+  <div class="container">
+    <h1>영화 메타데이터 테스트</h1>
+    <p class="description">제목을 입력하거나 엑셀 파일을 업로드해서 KMDB/OMDb 데이터를 확인하세요.</p>
 
-<body class="bg center">
-    <h1 class="title">2023 신년계획</h1>
-    <P class="msg">하루하루 성실히 목표를 잊지 말자</P>
-    <div class="row flex-row wrap">
-        <div class="bucket img1 center">영어 말하기</div>
-        <div class="bucket img2 center">내 웹사이트 만들기 </div>
-        <div class="bucket img1 center">해외여행 가기</div>
-        <div class="bucket img2 center">잘 놀기</div>
-        <div class="bucket img1 center">해먹당 1년 영상,글</div>
-        <div class="bucket img2 center">책 1주일에 한 권</div>
+    <div class="panel">
+      <div class="grid">
+        <div>
+          <label for="movie-title">단일 영화 제목</label>
+          <input id="movie-title" type="text" placeholder="예: 올드보이" />
+        </div>
+        <div>
+          <label for="movie-file">엑셀 파일 업로드</label>
+          <input id="movie-file" type="file" accept=".xlsx" />
+          <div class="hint">첫 번째 열에 영화 제목만 입력하세요.</div>
+        </div>
+      </div>
+      <div class="actions" style="margin-top: 16px;">
+        <button id="search-title">제목으로 검색</button>
+        <button id="search-file" class="secondary">파일로 검색</button>
+        <button id="reset" class="secondary">초기화</button>
+      </div>
+      <div id="status" class="status">대기 중...</div>
+      <a id="download" class="download" hidden>엑셀 다운로드</a>
     </div>
 
-</body>
+    <div class="panel">
+      <h2>검색 결과</h2>
+      <div id="result"></div>
+    </div>
+  </div>
 
+  <script type="importmap">
+    {
+      "imports": {
+        "xlsx-populate": "https://esm.sh/xlsx-populate@1.21.0"
+      }
+    }
+  </script>
+  <script type="module" src="./app.js"></script>
+</body>
 </html>
