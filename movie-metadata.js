@@ -1,3 +1,5 @@
+import XlsxPopulate from "xlsx-populate";
+
 // ===============================
 // 🔑 API Keys
 // ===============================
@@ -11,7 +13,7 @@ function withCorsProxy(url) {
 }
 
 export default async function run(input) {
-  // 1) 단일 제목 조회
+  // 1) 단일 제목 처리
   if (input.movieTitle) {
     const meta = await getMovieMetadata(input.movieTitle);
     return {
@@ -20,9 +22,15 @@ export default async function run(input) {
     };
   }
 
-  // 2) 엑셀 파일 조회
+  // 2) 파일 업로드 처리
   if (input.files && input.files.length > 0) {
-    const titles = await readExcelTitles(input.files[0]);
+    const file = input.files[0];
+    const arrayBuffer = await file.arrayBuffer();
+
+    const workbook = await XlsxPopulate.fromDataAsync(arrayBuffer);
+    const sheet = workbook.sheet(0);
+
+    const titles = sheet.usedRange().value().map(row => row[0]).filter(v => v);
 
     const results = [];
     for (const t of titles) {
@@ -38,38 +46,6 @@ export default async function run(input) {
   return { error: "제목 또는 파일이 필요합니다." };
 }
 
-
-// ========================================================
-// 📘 엑셀 읽기 (SheetJS 기반)
-// ========================================================
-async function readExcelTitles(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = function (e) {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: "array" });
-
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-
-      // 2D 배열로 가져오기
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-      // 첫 번째 컬럼만 가져오기
-      const titles = rows
-        .map(row => row[0])
-        .filter(v => v && typeof v === "string");
-
-      resolve(titles);
-    };
-
-    reader.onerror = reject;
-    reader.readAsArrayBuffer(file);
-  });
-}
-
-
 // ========================================================
 // 🎬 통합 검색: KMDB → OMDb
 // ========================================================
@@ -83,9 +59,8 @@ async function getMovieMetadata(title) {
   return { title, error: "메타데이터를 찾을 수 없습니다." };
 }
 
-
 // ========================================================
-// 🎥 KMDB API
+// 🎥 KMDB API 호출
 // ========================================================
 async function fetchFromKMDB(title) {
   const url = `https://api.koreafilm.or.kr/openapi-data2/wisenut/search_api/search_json2.jsp?collection=kmdb_new2&detail=Y&query=${encodeURIComponent(title)}&ServiceKey=${KMDB_KEY}`;
@@ -115,7 +90,6 @@ async function fetchFromKMDB(title) {
   };
 }
 
-
 // ========================================================
 // 🌍 OMDb API
 // ========================================================
@@ -125,36 +99,38 @@ async function fetchFromOMDb(title) {
   const res = await fetch(withCorsProxy(url));
   const data = await res.json();
 
-  if (data.Response === "False") return { error: "OMDb 검색 실패" };
+  if (data.Response === "False") {
+    return { error: "OMDb 검색 실패" };
+  }
 
   return {
     source: "OMDb",
-    title: data.Title,
-    englishTitle: data.Title,
-    year: data.Year,
-    director: data.Director,
-    cast: data.Actors,
-    genre: data.Genre,
-    rating: data.Rated,
-    plot: data.Plot,
-    country: data.Country,
-    releaseDate: data.Released,
-    runtime: data.Runtime,
-    imdbRating: data.imdbRating
+    title: data.Title || "",
+    englishTitle: data.Title || "",
+    year: data.Year || "",
+    director: data.Director || "",
+    cast: data.Actors || "",
+    genre: data.Genre || "",
+    rating: data.Rated || "",
+    plot: data.Plot || "",
+    country: data.Country || "",
+    releaseDate: data.Released || "",
+    runtime: data.Runtime || "",
+    imdbRating: data.imdbRating || ""
   };
 }
 
-
 // ========================================================
-// 🧾 엑셀 생성 (SheetJS 기반)
+// 🧾 엑셀 생성
 // ========================================================
 async function createExcel(metadataList) {
-  const wb = XLSX.utils.book_new();
+  const workbook = await XlsxPopulate.fromBlankAsync();
+  const sheet = workbook.sheet(0);
 
-  const rows = [
+  sheet.cell("A1").value([
     [
       "Source", "Title", "English Title", "Year", "Director", "Cast",
-      "Genre", "Rating", "Plot", "Country", "Release Date", "Poster / Runtime", "IMDB Rating"
+      "Genre", "Rating", "Plot", "Country", "Release Date", "Poster/Runtime", "IMDB Rating"
     ],
     ...metadataList.map(m => [
       m.source ?? "",
@@ -171,10 +147,7 @@ async function createExcel(metadataList) {
       m.poster ?? m.runtime ?? "",
       m.imdbRating ?? ""
     ])
-  ];
+  ]);
 
-  const sheet = XLSX.utils.aoa_to_sheet(rows);
-  XLSX.utils.book_append_sheet(wb, sheet, "Results");
-
-  return XLSX.write(wb, { type: "array", bookType: "xlsx" });
+  return workbook.outputAsync();
 }
