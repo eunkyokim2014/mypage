@@ -1,202 +1,67 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>영화 메타데이터 테스트 UI</title>
-  <style>
-    :root {
-      color-scheme: light;
-      font-family: "Pretendard", "Apple SD Gothic Neo", sans-serif;
-    }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>영화 메타데이터 테스트</title>
 
-    body {
-      margin: 0;
-      background: #f6f7fb;
-      color: #1f2937;
-    }
+  <!-- ✅ SheetJS (xlsx) CDN: 브라우저에서 엑셀 읽기/쓰기 -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    .container {
-      max-width: 960px;
-      margin: 40px auto;
-      padding: 0 20px 60px;
-    }
-
-    h1 {
-      font-size: 28px;
-      margin-bottom: 8px;
-    }
-
-    p.description {
-      margin: 0 0 24px;
-      color: #4b5563;
-    }
-
-    .panel {
-      background: #fff;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-      margin-bottom: 24px;
-    }
-
-    .grid {
-      display: grid;
-      gap: 16px;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    }
-
-    label {
-      font-weight: 600;
-      display: block;
-      margin-bottom: 8px;
-    }
-
-    input[type="text"],
-    input[type="file"] {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 10px;
-      font-size: 14px;
-      background: #fff;
-    }
-
-    button {
-      border: none;
-      background: #2563eb;
-      color: #fff;
-      padding: 12px 18px;
-      border-radius: 10px;
-      font-size: 14px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    button.secondary {
-      background: #e5e7eb;
-      color: #111827;
-    }
-
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .actions {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .status {
-      margin-top: 12px;
-      font-size: 14px;
-      color: #6b7280;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 16px;
-      font-size: 14px;
-    }
-
-    th,
-    td {
-      padding: 10px;
-      border-bottom: 1px solid #e5e7eb;
-      text-align: left;
-      vertical-align: top;
-    }
-
-    th {
-      background: #f9fafb;
-      font-weight: 600;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 600;
-      background: #eef2ff;
-      color: #3730a3;
-    }
-
-    .download {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 12px;
-      text-decoration: none;
-      color: #1d4ed8;
-      font-weight: 600;
-    }
-
-    .error {
-      color: #dc2626;
-      font-weight: 600;
-    }
-
-    .hint {
-      font-size: 13px;
-      color: #6b7280;
-      margin-top: 8px;
-    }
-  </style>
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>영화 메타데이터 테스트</h1>
-    <p class="description">제목을 입력하거나 엑셀 파일을 업로드해서 KMDB/OMDb 데이터를 확인하세요.</p>
+  <main class="container">
+    <header class="header">
+      <h1>영화 메타데이터 테스트</h1>
+      <p class="sub">
+        제목을 입력하거나 엑셀 파일을 업로드해서 KMDB/OMDb 데이터를 확인하세요.
+      </p>
+    </header>
 
-    <div class="panel">
-      <div class="grid">
-        <div>
+    <section class="card">
+      <div class="form-grid">
+        <div class="field">
           <label for="movie-title">단일 영화 제목</label>
           <input id="movie-title" type="text" placeholder="예: 올드보이" />
         </div>
-        <div>
+
+        <div class="field">
           <label for="movie-file">엑셀 파일 업로드</label>
-          <input id="movie-file" type="file" accept=".xlsx" />
-          <div class="hint">첫 번째 열에 영화 제목만 입력하세요.</div>
+          <input id="movie-file" type="file" accept=".xlsx,.xls" />
+          <div class="hint">첫 번째 시트의 A열(첫 번째 열)에 영화 제목만 입력하세요.</div>
         </div>
       </div>
-      <div class="actions" style="margin-top: 16px;">
-        <button id="search-title">제목으로 검색</button>
-        <button id="search-file" class="secondary">파일로 검색</button>
-        <button id="reset" class="secondary">초기화</button>
+
+      <div class="actions">
+        <button id="search-title" class="btn primary">제목으로 검색</button>
+        <button id="search-file" class="btn">파일로 검색</button>
+        <button id="reset" class="btn ghost">초기화</button>
       </div>
+
       <div id="status" class="status">대기 중...</div>
+
       <a id="download" class="download" hidden>엑셀 다운로드</a>
-    </div>
+    </section>
 
-    <div class="panel">
+    <section class="card">
       <h2>빠른 테스트 가이드</h2>
-      <ol class="hint" style="margin-top: 8px;">
-        <li>로컬 서버 실행: <strong>python -m http.server 8000</strong></li>
-        <li>브라우저에서 <strong>http://localhost:8000</strong> 접속</li>
-        <li>제목 검색 또는 엑셀 파일 업로드 후 결과 확인</li>
+      <ol class="guide">
+        <li>로컬 서버 실행: <code>python -m http.server 8000</code></li>
+        <li>브라우저 접속: <code>http://localhost:8000</code></li>
+        <li>제목 검색 또는 엑셀 업로드 후 결과 확인</li>
       </ol>
-    </div>
+      <p class="small">
+        ※ KMDB/OMDb 호출은 브라우저 CORS 때문에 프록시가 적용되어 있습니다.
+      </p>
+    </section>
 
-    <div class="panel">
+    <section class="card">
       <h2>검색 결과</h2>
-      <div id="result"></div>
-    </div>
-  </div>
+      <div id="result" class="result"></div>
+    </section>
+  </main>
 
-  <script type="importmap">
-    {
-      "imports": {
-        "xlsx-populate": "https://esm.sh/xlsx-populate@1.21.0"
-      }
-    }
-  </script>
   <script type="module" src="./app.js"></script>
 </body>
 </html>
