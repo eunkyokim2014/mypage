@@ -1,5 +1,3 @@
-import { readXlsx, writeXlsx } from "xlsx-populate";
-
 // ===============================
 // 🔑 API Keys
 // ===============================
@@ -13,7 +11,7 @@ function withCorsProxy(url) {
 }
 
 export default async function run(input) {
-  // 1) 단일 제목 입력 처리
+  // 1) 단일 제목 조회
   if (input.movieTitle) {
     const meta = await getMovieMetadata(input.movieTitle);
     return {
@@ -22,21 +20,13 @@ export default async function run(input) {
     };
   }
 
-  // 2) 엑셀 업로드 처리
+  // 2) 엑셀 파일 조회
   if (input.files && input.files.length > 0) {
-    const file = input.files[0];
-    const workbook = await readXlsx(await file.arrayBuffer());
-    const sheet = workbook.sheet(0);
-
-    const titles = [];
-    sheet.usedRange().value().forEach(row => {
-      if (row[0]) titles.push(row[0]);
-    });
+    const titles = await readExcelTitles(input.files[0]);
 
     const results = [];
     for (const t of titles) {
-      const meta = await getMovieMetadata(t);
-      results.push(meta);
+      results.push(await getMovieMetadata(t));
     }
 
     return {
@@ -48,24 +38,54 @@ export default async function run(input) {
   return { error: "제목 또는 파일이 필요합니다." };
 }
 
+
 // ========================================================
-// 🎬 통합 검색 함수: KMDB → OMDb 순서로 조회
+// 📘 엑셀 읽기 (SheetJS 기반)
+// ========================================================
+async function readExcelTitles(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+
+      // 2D 배열로 가져오기
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+      // 첫 번째 컬럼만 가져오기
+      const titles = rows
+        .map(row => row[0])
+        .filter(v => v && typeof v === "string");
+
+      resolve(titles);
+    };
+
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+
+// ========================================================
+// 🎬 통합 검색: KMDB → OMDb
 // ========================================================
 async function getMovieMetadata(title) {
-  // 1) KMDB 검색 (한국 영화 우선)
   const kmdb = await fetchFromKMDB(title);
   if (kmdb && !kmdb.error) return kmdb;
 
-  // 2) OMDb 검색 (해외 영화)
   const omdb = await fetchFromOMDb(title);
   if (omdb && !omdb.error) return omdb;
 
-  // 3) 실패
   return { title, error: "메타데이터를 찾을 수 없습니다." };
 }
 
+
 // ========================================================
-// 🎥 KMDB API 호출
+// 🎥 KMDB API
 // ========================================================
 async function fetchFromKMDB(title) {
   const url = `https://api.koreafilm.or.kr/openapi-data2/wisenut/search_api/search_json2.jsp?collection=kmdb_new2&detail=Y&query=${encodeURIComponent(title)}&ServiceKey=${KMDB_KEY}`;
@@ -95,8 +115,9 @@ async function fetchFromKMDB(title) {
   };
 }
 
+
 // ========================================================
-// 🌍 OMDb API 호출
+// 🌍 OMDb API
 // ========================================================
 async function fetchFromOMDb(title) {
   const url = `https://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=${OMDB_KEY}&plot=full&r=json`;
@@ -104,35 +125,33 @@ async function fetchFromOMDb(title) {
   const res = await fetch(withCorsProxy(url));
   const data = await res.json();
 
-  if (data.Response === "False") {
-    return { error: "OMDb 검색 실패" };
-  }
+  if (data.Response === "False") return { error: "OMDb 검색 실패" };
 
   return {
     source: "OMDb",
-    title: data.Title || "",
-    englishTitle: data.Title || "",
-    year: data.Year || "",
-    director: data.Director || "",
-    cast: data.Actors || "",
-    genre: data.Genre || "",
-    rating: data.Rated || "",
-    plot: data.Plot || "",
-    country: data.Country || "",
-    releaseDate: data.Released || "",
-    runtime: data.Runtime || "",
-    imdbRating: data.imdbRating || ""
+    title: data.Title,
+    englishTitle: data.Title,
+    year: data.Year,
+    director: data.Director,
+    cast: data.Actors,
+    genre: data.Genre,
+    rating: data.Rated,
+    plot: data.Plot,
+    country: data.Country,
+    releaseDate: data.Released,
+    runtime: data.Runtime,
+    imdbRating: data.imdbRating
   };
 }
 
+
 // ========================================================
-// 🧾 엑셀 생성
+// 🧾 엑셀 생성 (SheetJS 기반)
 // ========================================================
 async function createExcel(metadataList) {
-  const workbook = await writeXlsx();
-  const sheet = workbook.sheet(0);
+  const wb = XLSX.utils.book_new();
 
-  sheet.cell("A1").value([
+  const rows = [
     [
       "Source", "Title", "English Title", "Year", "Director", "Cast",
       "Genre", "Rating", "Plot", "Country", "Release Date", "Poster / Runtime", "IMDB Rating"
@@ -152,7 +171,10 @@ async function createExcel(metadataList) {
       m.poster ?? m.runtime ?? "",
       m.imdbRating ?? ""
     ])
-  ]);
+  ];
 
-  return workbook.outputAsync();
+  const sheet = XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, sheet, "Results");
+
+  return XLSX.write(wb, { type: "array", bookType: "xlsx" });
 }
