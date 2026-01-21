@@ -22,6 +22,7 @@ function resetOutput() {
 function setLoading(isLoading) {
   searchTitleBtn.disabled = isLoading;
   searchFileBtn.disabled = isLoading;
+  resetBtn.disabled = isLoading;
 }
 
 function normalizeMetadata(metadata) {
@@ -37,18 +38,17 @@ function renderTable(metadataList) {
   }
 
   const rows = metadataList.map(item => {
-    const error = item.error ? `<div class="error">${item.error}</div>` : "";
+    const error = item.error ? `<div class="inline-error">${item.error}</div>` : "";
     return `
       <tr>
         <td><span class="badge">${item.source ?? "N/A"}</span></td>
-        <td>${item.title ?? ""} ${error}</td>
+        <td>${item.title ?? ""}${error}</td>
         <td>${item.englishTitle ?? ""}</td>
         <td>${item.year ?? ""}</td>
         <td>${item.director ?? ""}</td>
         <td>${item.cast ?? ""}</td>
         <td>${item.genre ?? ""}</td>
         <td>${item.rating ?? ""}</td>
-        <td>${item.plot ?? ""}</td>
         <td>${item.country ?? ""}</td>
         <td>${item.releaseDate ?? ""}</td>
       </tr>
@@ -67,20 +67,17 @@ function renderTable(metadataList) {
           <th>Cast</th>
           <th>Genre</th>
           <th>Rating</th>
-          <th>Plot</th>
           <th>Country</th>
           <th>Release Date</th>
         </tr>
       </thead>
-      <tbody>
-        ${rows}
-      </tbody>
+      <tbody>${rows}</tbody>
     </table>
   `;
 }
 
-function setDownload(fileBuffer) {
-  const blob = new Blob([fileBuffer], {
+function setDownload(arrayBuffer) {
+  const blob = new Blob([arrayBuffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   });
   const url = URL.createObjectURL(blob);
@@ -97,6 +94,7 @@ async function handleSearch(payload) {
   try {
     const { default: run } = await import("./movie-metadata.js");
     const output = await run(payload);
+
     if (output.error) {
       setStatus(output.error, true);
       return;
@@ -104,9 +102,11 @@ async function handleSearch(payload) {
 
     const metadataList = normalizeMetadata(output.metadata);
     renderTable(metadataList);
+
     if (output.excelFile) {
       setDownload(output.excelFile);
     }
+
     setStatus(`총 ${metadataList.length}건 조회 완료.`);
   } catch (error) {
     setStatus(`오류가 발생했습니다: ${error.message}`, true);
