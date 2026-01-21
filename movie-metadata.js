@@ -5,6 +5,12 @@ import { readXlsx, writeXlsx } from "xlsx-populate";
 // ===============================
 const OMDB_KEY = "ce0ca871";
 const KMDB_KEY = "66C7AXU2KBQEJ6Y5LX1U";
+const CORS_PROXY = "https://api.allorigins.win/raw?url=";
+const isBrowser = typeof window !== "undefined";
+
+function withCorsProxy(url) {
+  return isBrowser ? `${CORS_PROXY}${encodeURIComponent(url)}` : url;
+}
 
 export default async function run(input) {
   // 1) 단일 제목 입력 처리
@@ -64,7 +70,7 @@ async function getMovieMetadata(title) {
 async function fetchFromKMDB(title) {
   const url = `https://api.koreafilm.or.kr/openapi-data2/wisenut/search_api/search_json2.jsp?collection=kmdb_new2&detail=Y&query=${encodeURIComponent(title)}&ServiceKey=${KMDB_KEY}`;
 
-  const res = await fetch(url);
+  const res = await fetch(withCorsProxy(url));
   const data = await res.json();
 
   if (!data.Data || !data.Data[0]?.Result?.length) {
@@ -95,7 +101,7 @@ async function fetchFromKMDB(title) {
 async function fetchFromOMDb(title) {
   const url = `https://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=${OMDB_KEY}&plot=full&r=json`;
 
-  const res = await fetch(url);
+  const res = await fetch(withCorsProxy(url));
   const data = await res.json();
 
   if (data.Response === "False") {
